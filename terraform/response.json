@@ -1,0 +1,1 @@
+{"statusCode": 200, "headers": {"Content-Type": "application/json"}, "body": "[{\"category\": \"training\", \"stock\": 50, \"price\": 4500, \"name\": \"Training T-Shirt\", \"productId\": \"p002\"}, {\"category\": \"sports\", \"stock\": 20, \"price\": 12800, \"name\": \"Running Shoes\", \"productId\": \"p001\"}]"}

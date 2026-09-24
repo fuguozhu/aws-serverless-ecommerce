@@ -1,0 +1,25 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfplan
+
+# Terraform generated files
+terraform.tfvars
+terraform.tfvars.json
+
+# Lambda package
+terraform/lambda.zip
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+
+# IDE
+.vscode/
+.idea/
