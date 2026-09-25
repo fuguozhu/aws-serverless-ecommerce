@@ -2,6 +2,21 @@ resource "aws_apigatewayv2_api" "ecommerce" {
   name          = "serverless-ecommerce-api"
   protocol_type = "HTTP"
 }
+resource "aws_apigatewayv2_authorizer" "cognito" {
+  api_id           = aws_apigatewayv2_api.ecommerce.id
+  authorizer_type  = "JWT"
+  authorizer_uri   = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.users.id}"
+  identity_sources = ["$request.header.Authorization"]
+  name             = "cognito-authorizer"
+
+  jwt_configuration {
+    audience = [
+      aws_cognito_user_pool_client.web.id
+    ]
+
+    issuer = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.users.id}"
+  }
+}
 
 resource "aws_apigatewayv2_integration" "get_products" {
   api_id = aws_apigatewayv2_api.ecommerce.id
@@ -21,6 +36,9 @@ resource "aws_apigatewayv2_route" "create_order" {
   api_id    = aws_apigatewayv2_api.ecommerce.id
   route_key = "POST /orders"
   target    = "integrations/${aws_apigatewayv2_integration.get_products.id}"
+
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
 }
 
 resource "aws_apigatewayv2_stage" "default" {
