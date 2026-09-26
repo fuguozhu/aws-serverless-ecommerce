@@ -41,13 +41,16 @@ def create_order(event, context):
 
         product_id = body["productId"]
         quantity = int(body["quantity"])
-        user_id = body.get("userId", "guest")
 
         if quantity <= 0:
             return response(400, {
                 "message": "quantity must be greater than 0"
             })
-
+        
+        # Get authenticated user ID from Cognito JWT
+        claims = event["requestContext"]["authorizer"]["claims"]
+        user_id = claims["sub"]
+        
         product = products_table.get_item(
             Key={
                 "productId": product_id
