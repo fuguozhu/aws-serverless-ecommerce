@@ -7,7 +7,9 @@ from decimal import Decimal
 import boto3
 from botocore.exceptions import ClientError
 
+
 dynamodb = boto3.resource("dynamodb")
+events = boto3.client("events")
 
 products_table = dynamodb.Table(os.environ["PRODUCTS_TABLE"])
 orders_table = dynamodb.Table(os.environ["ORDERS_TABLE"])
@@ -31,7 +33,6 @@ def response(status_code, body):
 
 def get_products(event, context):
     result = products_table.scan()
-
     return response(200, result["Items"])
 
 
@@ -46,11 +47,10 @@ def create_order(event, context):
             return response(400, {
                 "message": "quantity must be greater than 0"
             })
-        
-        # Get authenticated user ID from Cognito JWT
+
         claims = event["requestContext"]["authorizer"]["claims"]
         user_id = claims["sub"]
-        
+
         product = products_table.get_item(
             Key={
                 "productId": product_id
@@ -98,6 +98,22 @@ def create_order(event, context):
             Item=order
         )
 
+        event_detail = {
+            "eventType": "OrderCreated",
+            "order": order
+        }
+
+        events.put_events(
+            Entries=[
+                {
+                    "EventBusName": os.environ["ORDER_EVENT_BUS_NAME"],
+                    "Source": "serverless-ecommerce",
+                    "DetailType": "OrderCreated",
+                    "Detail": json.dumps(event_detail, default=decimal_to_int)
+                }
+            ]
+        )
+
         return response(201, order)
 
     except KeyError as error:
@@ -121,7 +137,6 @@ def create_order(event, context):
 def lambda_handler(event, context):
     print("EVENT:", json.dumps(event))
 
-    # HTTP API Payload Format Version 2.0
     route_key = event.get("routeKey")
 
     if route_key == "GET /products":
@@ -130,7 +145,6 @@ def lambda_handler(event, context):
     if route_key == "POST /orders":
         return create_order(event, context)
 
-    # HTTP API Payload Format Version 1.0
     request_context = event.get("requestContext", {})
 
     method = request_context.get("httpMethod")
@@ -142,12 +156,7 @@ def lambda_handler(event, context):
     if method == "POST" and path == "/orders":
         return create_order(event, context)
 
-    print(
-        "Unknown route:",
-        route_key,
-        method,
-        path
-    )
+    print("Unknown route:", route_key, method, path)
 
     return response(404, {
         "message": "Route not found"

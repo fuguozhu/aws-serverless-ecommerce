@@ -12,7 +12,7 @@ terraform.tfvars.json
 
 # Lambda package
 terraform/lambda.zip
-
+terraform/worker_lambda.zip
 # macOS
 .DS_Store
 

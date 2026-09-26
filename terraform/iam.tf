@@ -46,3 +46,21 @@ resource "aws_iam_role_policy" "lambda_dynamodb" {
     ]
   })
 }
+
+resource "aws_iam_role_policy" "lambda_eventbridge" {
+  name = "serverless-ecommerce-lambda-eventbridge"
+  role = aws_iam_role.lambda_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "events:PutEvents"
+        ]
+        Resource = aws_cloudwatch_event_bus.ecommerce.arn
+      }
+    ]
+  })
+}
