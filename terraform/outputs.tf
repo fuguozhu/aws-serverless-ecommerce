@@ -11,3 +11,7 @@ output "cognito_client_id" {
   description = "Cognito User Pool Client ID"
   value       = aws_cognito_user_pool_client.web.id
 }
+output "alert_topic_arn" {
+  description = "SNS alert topic ARN"
+  value       = aws_sns_topic.alerts.arn
+}

@@ -10,6 +10,7 @@ from botocore.exceptions import ClientError
 
 dynamodb = boto3.resource("dynamodb")
 events = boto3.client("events")
+sns = boto3.client("sns")
 
 products_table = dynamodb.Table(os.environ["PRODUCTS_TABLE"])
 orders_table = dynamodb.Table(os.environ["ORDERS_TABLE"])
@@ -65,7 +66,7 @@ def create_order(event, context):
         price = product["price"]
 
         try:
-            products_table.update_item(
+            result = products_table.update_item(
                 Key={
                     "productId": product_id
                 },
@@ -73,14 +74,29 @@ def create_order(event, context):
                 ConditionExpression="stock >= :quantity",
                 ExpressionAttributeValues={
                     ":quantity": quantity
-                }
+                },
+                ReturnValues="UPDATED_NEW"
             )
+
+            new_stock = int(result["Attributes"]["stock"])
+
         except ClientError as error:
             if error.response["Error"]["Code"] == "ConditionalCheckFailedException":
                 return response(409, {
                     "message": "Insufficient stock"
                 })
             raise
+
+        if new_stock <= 5:
+            sns.publish(
+                TopicArn=os.environ["ALERT_TOPIC_ARN"],
+                Subject="Low Stock Alert",
+                Message=json.dumps({
+                    "message": "Product stock is low",
+                    "productId": product_id,
+                    "remainingStock": new_stock
+                })
+            )
 
         order_id = str(uuid.uuid4())
 

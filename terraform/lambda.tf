@@ -19,6 +19,7 @@ resource "aws_lambda_function" "get_products" {
       PRODUCTS_TABLE       = aws_dynamodb_table.products.name
       ORDERS_TABLE         = aws_dynamodb_table.orders.name
       ORDER_EVENT_BUS_NAME = aws_cloudwatch_event_bus.ecommerce.name
+      ALERT_TOPIC_ARN      = aws_sns_topic.alerts.arn
     }
   }
 }
