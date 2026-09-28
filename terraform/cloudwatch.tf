@@ -1,6 +1,11 @@
+resource "aws_cloudwatch_log_group" "lambda_get_products" {
+  name              = "/aws/lambda/${aws_lambda_function.get_products.function_name}"
+  retention_in_days = 7
+}
+
 resource "aws_cloudwatch_log_metric_filter" "lambda_errors" {
   name           = "serverless-ecommerce-lambda-errors"
-  log_group_name = "/aws/lambda/serverless-ecommerce-get-products"
+  log_group_name = aws_cloudwatch_log_group.lambda_get_products.name
   pattern        = "ERROR"
 
   metric_transformation {
@@ -11,8 +16,9 @@ resource "aws_cloudwatch_log_metric_filter" "lambda_errors" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
-  alarm_name          = "serverless-ecommerce-lambda-errors"
-  alarm_description   = "Alert when the ecommerce Lambda reports errors"
+  alarm_name        = "serverless-ecommerce-lambda-errors"
+  alarm_description = "Alert when the ecommerce Lambda reports errors"
+
   namespace           = "ServerlessEcommerce"
   metric_name         = "ServerlessEcommerceLambdaErrors"
   statistic           = "Sum"
