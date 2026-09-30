@@ -34,7 +34,7 @@ resource "aws_iam_role" "github_actions" {
           }
 
           StringLike = {
-            "token.actions.githubusercontent.com:sub" = "repo:fuguozhu/aws-serverless-ecommerce:*"
+            "token.actions.githubusercontent.com:sub" = "repo:fuguozhu@214846954/aws-serverless-ecommerce@1385746538:environment:production"
           }
         }
       }

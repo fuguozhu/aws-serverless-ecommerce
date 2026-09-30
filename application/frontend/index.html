@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Serverless EC</title>
+</head>
+<body>
+  <h1>Serverless EC</h1>
+
+  <h2>ログイン</h2>
+
+  <input
+    id="email"
+    type="email"
+    placeholder="メールアドレス"
+  >
+
+  <input
+    id="password"
+    type="password"
+    placeholder="パスワード"
+  >
+
+  <button id="login">ログイン</button>
+
+  <p id="login-status"></p>
+
+  <hr>
+
+  <h2>商品一覧</h2>
+
+  <button id="load-products">商品を取得</button>
+
+  <ul id="products"></ul>
+
+  <script>
+    const API_URL =
+      "https://7p8ft1hki8.execute-api.ap-northeast-1.amazonaws.com";
+
+    const COGNITO_CLIENT_ID =
+      "2u24m4el6um1b92cus68kgm352";
+
+    const COGNITO_ENDPOINT =
+      "https://cognito-idp.ap-northeast-1.amazonaws.com/";
+
+    let accessToken = null;
+
+    document
+      .getElementById("login")
+      .addEventListener("click", async () => {
+        const email =
+          document.getElementById("email").value;
+
+        const password =
+          document.getElementById("password").value;
+
+        const status =
+          document.getElementById("login-status");
+
+        try {
+          const response = await fetch(COGNITO_ENDPOINT, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-amz-json-1.1",
+              "X-Amz-Target": "AWSCognitoIdentityProviderService.InitiateAuth"
+            },
+            body: JSON.stringify({
+              AuthFlow: "USER_PASSWORD_AUTH",
+              ClientId: COGNITO_CLIENT_ID,
+              AuthParameters: {
+                USERNAME: email,
+                PASSWORD: password
+              }
+            })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(
+              data.message || "ログインに失敗しました"
+            );
+          }
+
+          accessToken =
+            data.AuthenticationResult.AccessToken;
+
+          status.textContent = "ログイン成功";
+
+        } catch (error) {
+          console.error(error);
+          status.textContent =
+            `ログイン失敗: ${error.message}`;
+        }
+      });
+
+    document
+      .getElementById("load-products")
+      .addEventListener("click", async () => {
+        const response =
+          await fetch(`${API_URL}/products`);
+
+        const products =
+          await response.json();
+
+        const list =
+          document.getElementById("products");
+
+        list.innerHTML = "";
+
+products.forEach(product => {
+  const item = document.createElement("li");
+
+  item.textContent =
+    `${product.name} - ¥${product.price} / 在庫: ${product.stock}`;
+
+  const quantity = document.createElement("input");
+  quantity.type = "number";
+  quantity.min = "1";
+  quantity.max = product.stock;
+  quantity.value = "1";
+
+  const orderButton = document.createElement("button");
+  orderButton.textContent = "注文";
+
+  orderButton.addEventListener("click", async () => {
+    if (!accessToken) {
+      alert("先にログインしてください");
+      return;
+    }
+
+    const response = await fetch(`${API_URL}/orders`, {
+      method: "POST",
+
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify({
+        productId: product.productId,
+        quantity: Number(quantity.value)
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert(`注文失敗: ${result.error || "Unknown error"}`);
+      return;
+    }
+
+    alert("注文しました");
+
+    console.log("Order:", result);
+
+    // 商品一覧を再取得
+    document.getElementById("load-products").click();
+
+    console.log("Order:", result);
+  });
+
+  item.appendChild(document.createTextNode(" 数量: "));
+  item.appendChild(quantity);
+  item.appendChild(orderButton);
+
+  list.appendChild(item);
+});
+      });
+  </script>
+</body>
+</html>
+

@@ -1,6 +1,12 @@
 resource "aws_apigatewayv2_api" "ecommerce" {
   name          = "serverless-ecommerce-api"
   protocol_type = "HTTP"
+
+  cors_configuration {
+    allow_origins = ["*"]
+    allow_methods = ["GET", "POST", "OPTIONS"]
+    allow_headers = ["Authorization", "Content-Type"]
+  }
 }
 resource "aws_apigatewayv2_authorizer" "cognito" {
   api_id           = aws_apigatewayv2_api.ecommerce.id

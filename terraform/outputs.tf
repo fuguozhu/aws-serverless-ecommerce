@@ -19,3 +19,7 @@ output "github_actions_role_arn" {
   description = "IAM Role ARN for GitHub Actions"
   value       = aws_iam_role.github_actions.arn
 }
+output "frontend_url" {
+  description = "CloudFront URL for the frontend"
+  value       = "https://${aws_cloudfront_distribution.frontend.domain_name}"
+}
