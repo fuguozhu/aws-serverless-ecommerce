@@ -48,3 +48,31 @@ resource "aws_s3_bucket_policy" "frontend" {
   bucket = aws_s3_bucket.frontend.id
   policy = data.aws_iam_policy_document.frontend.json
 }
+
+resource "aws_s3_object" "frontend_config" {
+  bucket = aws_s3_bucket.frontend.id
+  key    = "config.js"
+
+  content = templatefile(
+    "${path.module}/../application/frontend/config.js.tftpl",
+    {
+      api_url           = aws_apigatewayv2_stage.default.invoke_url
+      cognito_client_id = aws_cognito_user_pool_client.web.id
+      aws_region        = var.aws_region
+    }
+  )
+
+  content_type = "application/javascript"
+
+  cache_control = "no-cache"
+}
+resource "aws_s3_object" "frontend_index" {
+  bucket = aws_s3_bucket.frontend.id
+  key    = "index.html"
+
+  source = "${path.module}/../application/frontend/index.html"
+
+  content_type = "text/html"
+
+  cache_control = "no-cache"
+}
