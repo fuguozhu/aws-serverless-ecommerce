@@ -23,3 +23,5 @@ __pycache__/
 # IDE
 .vscode/
 .idea/
+application/frontend/config.js
+terraform/*.zip
