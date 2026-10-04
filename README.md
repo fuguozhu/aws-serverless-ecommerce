@@ -2,61 +2,50 @@
 
 AWSのサーバーレスサービスを利用して構築した、EC注文・在庫管理システムです。
 
-## 概要
+商品取得、ユーザー認証、注文・在庫管理、イベント駆動型の非同期処理、監視までを実装しています。
 
-商品の取得・注文処理・在庫管理・認証・非同期処理・通知・監視までをAWS上で実装しています。
-
-Infrastructure as CodeにはTerraform、CI/CDにはGitHub 
-Actionsを使用しています。
-
-## アーキテクチャ
+## Architecture
 
 ```text
                     GitHub
                        │
-                       ▼
-               GitHub Actions
-                       │
-                  OIDC / IAM
+                 GitHub Actions
+                  OIDC / Terraform
                        │
                        ▼
-                  Terraform
-                       │
-        ┌──────────────┴──────────────┐
-        │                             │
-   API Gateway                   EventBridge
-        │                             │
-        ▼                             ▼
-      Lambda                         SQS
-        │                             │
-   ┌────┴────┐                        ▼
-   │         │                     Lambda
-   ▼         ▼                        │
-DynamoDB   Cognito                    │
-Products   認証                       │
-Orders                                │
-                                      ▼
-                                    SNS
-                                      │
-                                  通知・監視
+Browser ──→ CloudFront ──→ S3
+  │
+  └────→ API Gateway ──→ Lambda
+                         │
+                    ┌────┴────┐
+                    ▼         ▼
+                DynamoDB   EventBridge
+                              │
+                              ▼
+                             SQS
+                              │
+                              ▼
+                       Worker Lambda
+
+Cognito ──→ API Gateway JWT Authentication
+
+Lambda ──→ CloudWatch ──→ SNS
 ```
 
-## 主な機能
+## Features
 
-* 商品一覧・商品情報の取得
-* 商品注文
-* DynamoDBによる在庫管理
+* 商品一覧・注文・在庫管理
 * Cognitoによるユーザー認証
-* API GatewayによるJWT認証
-* EventBridgeによるイベント連携
-* SQSによる非同期注文処理
-* Lambda Workerによる注文処理
-* 在庫が少なくなった場合のSNS通知
-* CloudWatchによるエラー監視・アラーム
+* API Gateway + LambdaによるAPI
+* EventBridge + SQSによる非同期処理
+* Lambda Workerによる注文後処理
+* CloudWatchによるエラー監視
+* SNSによる通知
+* CloudFront + S3によるFrontend配信
 
-## 使用技術
+## Tech Stack
 
-### AWS
+**AWS**
 
 * API Gateway
 * Lambda
@@ -66,9 +55,11 @@ Orders                                │
 * SQS
 * SNS
 * CloudWatch
+* CloudFront
+* S3
 * IAM
 
-### 開発・運用
+**Development**
 
 * Python
 * Terraform
@@ -77,37 +68,34 @@ Orders                                │
 
 ## CI/CD
 
-GitHubへのPushをトリガーとしてGitHub Actionsを実行します。
-
 ```text
 GitHub Push
     ↓
 GitHub Actions
     ↓
-OIDC認証
+OIDC
     ↓
-AWS IAM Role
+AWS IAM
     ↓
 Terraform
     ↓
-Init → Format Check → Validate → Plan
+Plan → Apply
 ```
 
-AWSアクセスキーをGitHubに保存せず、OIDCを利用してAWS IAM 
-Roleを引き受ける構成にしています。
+AWS Access KeyをGitHubに保存せず、OIDCによるIAM Role認証を使用しています。
 
-## 学習・実装ポイント
+## Project Structure
 
-* AWSサーバーレスアーキテクチャ
-* イベント駆動アーキテクチャ
-* 非同期処理
-* AWS IAM / OIDC
-* Infrastructure as Code
-* GitHub ActionsによるCI/CD
-* CloudWatchによる監視
+```text
+application/
+├── frontend/
+└── lambda/
 
-## Repository
+terraform/
+├── *.tf
 
-GitHub:
-https://github.com/fuguozhu/aws-serverless-ecommerce
+.github/
+└── workflows/
+    └── terraform.yml
+```
 
